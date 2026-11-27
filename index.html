@@ -1,0 +1,254 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>学园破拆 · M校 / D校</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="c3d"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="hud-tl">
+      <div id="diff-badge"></div>
+      <div id="run-stats">
+        <div>破坏价值 <b id="st-damage">$0</b></div>
+        <div>击杀 <b id="st-kills">0</b></div>
+        <div>怪物 <b id="st-npc">0</b></div>
+        <div>裂隙 <b id="st-portal">0/12</b></div>
+      </div>
+    </div>
+    <div id="hud-tr">
+      <div id="st-money">$0</div>
+      <div id="st-ratio"></div>
+      <div id="st-income"></div>
+    </div>
+    <div id="hud-bl">
+      <div class="bar hp" id="bar-hp"><span></span><label>生命</label></div>
+      <div class="bar ar" id="bar-armor"><span></span><label>护甲</label></div>
+      <div class="bar st" id="bar-sta"><span></span><label>体力</label></div>
+    </div>
+    <div id="hud-br">
+      <div id="skill-hud"></div>
+      <div id="weapon-name"></div>
+      <div id="weapon-ammo"></div>
+      <div id="weapon-hint"></div>
+    </div>
+    <div id="veh-hud" class="hidden">
+      <div class="bar veh" id="bar-veh"><span></span><label>载具</label></div>
+      <div id="veh-hint"></div>
+    </div>
+    <div id="crosshair"><span class="dot"></span></div>
+    <div id="hitmarker" class="hidden">✕</div>
+    <div id="interact" class="hidden"></div>
+    <div id="toasts"></div>
+    <div id="banner" class="hidden"><div id="banner-text"></div><div id="banner-sub"></div></div>
+    <canvas id="minimap" width="220" height="110"></canvas>
+    <div id="vignette"></div>
+    <div id="damage-flash"></div>
+  </div>
+
+  <!-- 主菜单 -->
+  <div id="menu">
+    <div class="panel menu-panel">
+      <h1>学园破拆</h1>
+      <div id="menu-money"></div>
+      <div class="row" style="margin-bottom:2px;">
+        <button class="btn" id="tod-day">白天</button>
+        <button class="btn" id="tod-night">黑夜</button>
+        <button class="btn" id="tod-auto">自动</button>
+      </div>
+      <div class="row">
+        <button class="btn" id="btn-shop">装备库</button>
+        <button class="btn" id="btn-up">升级</button>
+        <button class="btn" id="btn-help">玩法说明</button>
+        <button class="btn" id="btn-auth">账号</button>
+        <button class="btn" id="btn-board">排行榜</button>
+      </div>
+      <h3>选择难度</h3>
+      <div id="diff-grid"></div>
+      <button class="btn big" id="btn-start">进入行动</button>
+      <div id="menu-account" class="hint"></div>
+    </div>
+  </div>
+
+  <!-- 商店 -->
+  <div id="shop" class="overlay hidden">
+    <div class="panel">
+      <div class="tabs" id="shop-tabs"></div>
+      <div class="row center hidden" id="shop-qty-row" style="align-items:center;gap:6px;margin:0 0 12px;">
+        <span style="font-size:13px;color:#98a2b8;">购买数量</span>
+        <button class="btn" id="qty-minus">−</button>
+        <input id="qty-input" type="number" min="1" max="999" value="1">
+        <button class="btn" id="qty-plus">＋</button>
+        <button class="btn qty-preset" data-n="5">×5</button>
+        <button class="btn qty-preset" data-n="10">×10</button>
+        <button class="btn qty-preset" data-n="99">×99</button>
+      </div>
+      <div id="shop-list"></div>
+      <div class="row center"><button class="btn" id="btn-shop-close">关闭 (B)</button></div>
+    </div>
+  </div>
+
+  <!-- 升级 -->
+  <div id="upg" class="overlay hidden">
+    <div class="panel">
+      <h2>身体素质 / 收益建筑</h2>
+      <div id="upg-list"></div>
+      <div class="row center"><button class="btn" id="btn-upg-close">关闭</button></div>
+    </div>
+  </div>
+
+  <!-- 暂停 -->
+  <div id="pause" class="overlay hidden">
+    <div class="panel">
+      <h2>暂停</h2>
+      <div class="row">
+        <button class="btn" id="btn-resume">继续 (ESC)</button>
+        <button class="btn" id="btn-shop2">装备库</button>
+        <button class="btn" id="btn-up2">升级</button>
+        <button class="btn" id="btn-surrender">主动放弃（-5%）</button>
+        <button class="btn" id="btn-quit">阵亡结算（10%）</button>
+      </div>
+      <p class="hint">主动放弃：破坏价值按 95% 结算（仅减5%）；阵亡结算：按最低10%结算；已入账的击杀奖金保留。</p>
+    </div>
+  </div>
+
+  <!-- 结算 -->
+  <div id="settle" class="overlay hidden">
+    <div class="panel">
+      <h2 id="settle-title"></h2>
+      <div id="settle-body"></div>
+      <div class="row center"><button class="btn big" id="btn-settle-ok">返回主菜单</button></div>
+    </div>
+  </div>
+
+  <!-- 帮助 -->
+  <div id="help" class="overlay hidden">
+    <div class="panel">
+      <h2>玩法说明</h2>
+      <div id="help-body"></div>
+      <div class="row center"><button class="btn" id="btn-help-close">关闭</button></div>
+    </div>
+  </div>
+
+  <div id="touchui" class="hidden">
+    <div id="joy"><div id="joyknob"></div><span class="joylabel">移动</span></div>
+    <div id="ajoy"><div id="ajoyknob"></div><span class="joylabel">瞄准</span></div>
+    <div id="tbtns">
+      <button class="tbtn" id="tb-func">功能</button>
+      <button class="tbtn" id="tb-skill">技能</button>
+      <button class="tbtn" id="tb-jump">跳跃</button>
+      <button class="tbtn" id="tb-prone">趴下</button>
+      <button class="tbtn" id="tb-hover">悬浮</button>
+      <button class="tbtn" id="tb-grenade">手雷</button>
+      <button class="tbtn" id="tb-use">互动</button>
+      <button class="tbtn" id="tb-mount">上车</button>
+      <button class="tbtn" id="tb-cycle">武器</button>
+      <button class="tbtn t-hide" id="tb-hide">隐藏</button>
+    </div>
+    <button class="tbtn t-fire" id="tb-fire">开火</button>
+    <button class="tbtn" id="tb-show">☰</button>
+    <!-- 功能子菜单 -->
+    <div id="func-menu" class="hidden">
+      <button class="tbtn" id="tb-pause">菜单</button>
+      <button class="tbtn" id="tb-ads">锁定</button>
+      <button class="tbtn" id="tb-teleport">传送</button>
+      <button class="tbtn" id="tb-shop">商店</button>
+    </div>
+    <!-- 技能子菜单 -->
+    <div id="skill-menu" class="hidden"></div>
+  </div>
+
+  <!-- 导弹地图选点 -->
+  <div id="missile-target" class="hidden">
+    <div class="panel center" style="width:auto;max-width:94vw;">
+      <h2 style="color:#ffd76a;">选择导弹打击点</h2>
+      <p class="hint" style="color:#c8d0e0;">点击地图任意位置发射（射程无限）</p>
+      <canvas id="missile-map"></canvas>
+      <div class="row center" style="margin-top:14px;">
+        <button class="btn" id="missile-cancel">取消 (Esc)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 加载界面 -->
+  <div id="loading" class="hidden">
+    <div class="panel center" style="text-align:center;">
+      <h2 style="color:#ffd76a;">正在生成地图…</h2>
+      <div id="load-bar"><span id="load-fill"></span></div>
+      <div id="load-text" class="hint">准备中</div>
+    </div>
+  </div>
+
+  <div id="rotate" class="hidden">
+    <div class="panel center">
+      <h2 style="font-size:28px;letter-spacing:2px;color:#ffd76a;">请旋转屏幕至横屏</h2>
+      <p style="color:#98a2b8;margin-top:12px;">本游戏为横屏设计，请将手机横置后游玩</p>
+    </div>
+  </div>
+
+  <!-- 账号 -->
+  <div id="auth" class="overlay hidden">
+    <div class="panel">
+      <h2>账号</h2>
+      <div id="auth-logged" class="hidden">
+        <p>当前玩家：<b id="auth-name"></b></p>
+        <div class="row center"><button class="btn" id="btn-logout">退出登录</button></div>
+      </div>
+      <div id="auth-form">
+        <div class="tabs">
+          <button class="btn sel" id="tab-login">登录</button>
+          <button class="btn" id="tab-reg">注册</button>
+        </div>
+        <input id="auth-user" placeholder="用户名（2-16字符）" maxlength="16" autocomplete="off">
+        <input id="auth-pass" type="password" placeholder="密码（至少4位）" maxlength="32">
+        <div id="auth-msg" class="hint"></div>
+        <div class="row center"><button class="btn big" id="btn-auth-submit">登录</button></div>
+        <p class="hint">账号与排行榜存储在云端（个人项目，密码加盐哈希）。</p>
+      </div>
+      <div class="row center"><button class="btn" id="btn-auth-close">关闭</button></div>
+    </div>
+  </div>
+
+  <!-- 排行榜 -->
+  <div id="board" class="overlay hidden">
+    <div class="panel">
+      <h2>排行榜（破坏价值）</h2>
+      <table id="board-table">
+        <thead><tr><th>#</th><th>玩家</th><th>破坏价值</th><th>击杀</th><th>难度</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div id="board-msg" class="hint"></div>
+      <div class="row center">
+        <button class="btn" id="btn-board-refresh">刷新</button>
+        <button class="btn" id="btn-board-close">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="libs/three.min.js?v=75"></script>
+<script src="libs/cannon.min.js?v=75"></script>
+<script src="js/config.js?v=75"></script>
+<script src="js/audio.js?v=75"></script>
+<script src="js/input.js?v=75"></script>
+<script src="js/world.js?v=75"></script>
+<script src="js/ground.js?v=75"></script>
+<script src="js/props.js?v=75"></script>
+<script src="js/buildings.js?v=75"></script>
+<script src="js/player.js?v=75"></script>
+<script src="js/weapons.js?v=75"></script>
+<script src="js/portals.js?v=75"></script>
+<script src="js/npcs.js?v=75"></script>
+<script src="js/vehicles.js?v=75"></script>
+<script src="js/skills.js?v=75"></script>
+<script src="js/auth.js?v=75"></script>
+<script src="js/economy.js?v=75"></script>
+<script src="js/ui.js?v=75"></script>
+<script src="js/game.js?v=75"></script>
+</body>
+</html>
